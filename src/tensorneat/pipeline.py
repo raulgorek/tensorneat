@@ -125,7 +125,7 @@ class Pipeline(StatefulBaseClass):
                     state, pop
                 )
                 fitnesses = jax.vmap(self.problem.evaluate, in_axes=(None, 0, None, 0))(
-                    state, keys, self.algorithm.forward, pop_transformed
+                    state, keys, act_func, pop_transformed
                 )
             else:
                 fitnesses = self._batched_evaluate(state, keys, pop)
@@ -288,13 +288,16 @@ class Pipeline(StatefulBaseClass):
         )
 
         self.algorithm.show_details(state, fitnesses)
-
+        if self.problem.requires_stateful_policy:
+            act_func = self.algorithm.stateful_policy_api()
+        else:
+            act_func = self.algorithm.get_forward()
         if self.show_problem_details:
             pop_transformed = self.compiled_pop_transform_func(
                 state, pop #using previous pop instead of requesting the new one from state here
             )
             self.problem.show_details(
-                state, state.randkey, self.algorithm.forward, pop_transformed
+                state, state.randkey, act_func, pop_transformed
             )
         # show details for problem
 
